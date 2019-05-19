@@ -14,22 +14,45 @@ Raspberry Pi Time-Lapse Recorder Backend
     * [RaspberryPiTlrFrontend](https://github.com/JudeBake/RaspberryPiTlrFrontend "Frontend Repo")
 
 ## Setup project
+* enable the camera interface and make sure the pi is updated to the latest
+
 * clone the repo
-`git clone git@github.com:JudeBake/RaspberryPiTlrBackend.git`
+
+```
+git clone git@github.com:JudeBake/RaspberryPiTlrBackend.git
+```
+
 or
-`git clone https://github.com/JudeBake/RaspberryPiTlrBackend.git`
+
+```
+git clone https://github.com/JudeBake/RaspberryPiTlrBackend.git
+```
 
 * install python3 and pip
 
-`sudo apt install python3 pip`
+```
+sudo apt install python3 python3-pip
+```
 
 * install python modules
-`sudo pip install flask flask-restful flask-jsonify flask-cors`
+
+```
+sudo pip install flask flask-restful flask-jsonpify flask-cors
+```
 
 * make main script executable
-`chmod +x raspberryPiTlr.py`
+
+```
+chmod +x raspberryPiTlr.py
+```
 
 ## Run project
-`python3 raspberryPiTlr.py`
+
+```
+python3 raspberryPiTlr.py
+```
 or
-`./raspberryPiTlr.py`
+
+```
+./raspberryPiTlr.py
+```
