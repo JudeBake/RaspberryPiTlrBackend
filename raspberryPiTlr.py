@@ -1,3 +1,10 @@
+#!/usr/bin/env python3
+# -*- coding: utf-8 -*-
+#
+#  camera_pi.py
+#  
+#  
+# 
 from flask import Flask, render_template, Response, request
 from flask_restful import Resource, Api
 from flask_jsonpify import jsonify
