@@ -31,7 +31,7 @@ git clone https://github.com/JudeBake/RaspberryPiTlrBackend.git
 * install python and pip
 
 ```
-sudo apt install python python-pip
+sudo apt install python3 python3-pip
 ```
 
 * install python modules
