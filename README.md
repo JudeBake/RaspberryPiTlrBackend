@@ -28,31 +28,26 @@ or
 git clone https://github.com/JudeBake/RaspberryPiTlrBackend.git
 ```
 
-* install python and pip
+* setup virtual environment and activate it
 
 ```
-sudo apt install python3 python3-pip
+python3 -m venv venv
+
+source venv/bin/activate
 ```
 
-* install python modules
+* install dependencies module
 
 ```
-sudo pip install flask flask-restful flask-jsonpify flask-cors
-```
-
-* make main script executable
-
-```
-sudo chmod +x raspberryPiTlr.py
+pip install picamera flask flask-restful flask-jsonpify flask-cors
 ```
 
 ## Run project
 
 ```
-python3 raspberryPiTlr.py
-```
-or
+export FLASK_APP=raspberryPiTlr.py
 
-```
-./raspberryPiTlr.py
+export FLASK_APP=raspberryPiTlr.py #if running debug
+
+flask run --host=0.0.0.0 --port=5000
 ```
