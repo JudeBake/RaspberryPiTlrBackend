@@ -14,7 +14,7 @@ class TimelapseRecorder(object):
     thread = None
     workingDir = '/home/pi/timelapse/'
     progressMsg = 'Not recording right now!'
-    settings
+    settings = {'timelaspeName': '', 'totalFrameCount': 0}
     stopRecordingThread = False
 
     def __init__(self, camera, logger):
