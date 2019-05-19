@@ -28,10 +28,10 @@ or
 git clone https://github.com/JudeBake/RaspberryPiTlrBackend.git
 ```
 
-* install python3 and pip
+* install python and pip
 
 ```
-sudo apt install python3 python3-pip
+sudo apt install python python-pip
 ```
 
 * install python modules
@@ -43,7 +43,7 @@ sudo pip install flask flask-restful flask-jsonpify flask-cors
 * make main script executable
 
 ```
-chmod +x raspberryPiTlr.py
+sudo chmod +x raspberryPiTlr.py
 ```
 
 ## Run project
