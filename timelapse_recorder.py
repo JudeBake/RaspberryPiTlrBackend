@@ -21,6 +21,12 @@ class TimelapseRecorder(object):
         TimelapseRecorder.camera = camera
         TimelapseRecorder.logger = logger
 
+    def getState(self):
+        if TimelapseRecorder.thread is None:
+            return {'state': 'Idle'}
+        else:
+            return {'state': 'Recording'}
+
     def startRecording(self, settings):
         """Start recording a timelapse"""
         if self.__setupTimelapseDir(settings['timelapseName']):

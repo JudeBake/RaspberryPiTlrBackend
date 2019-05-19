@@ -4,14 +4,16 @@ from flask_jsonpify import jsonify
 from flask_cors import CORS
 
 # Raspberry Pi camera module (requires picamera package, developed by Miguel Grinberg)
-
 from camera_pi import Camera
-camera = Camera()
+from timelapse_recorder import TimelapseRecorder
 
 app = Flask(__name__)
 """For Dev only"""
 cors = CORS(app, resources={r"/*": {"origins": "*"}})
 api = Api(app)
+
+camera = Camera()
+timeLapseRecorder = TimelapseRecorder(camera, app.logger)
 
 @app.route('/')
 def index():
@@ -31,20 +33,30 @@ def video_feed():
     return Response(gen(camera),
                     mimetype='multipart/x-mixed-replace; boundary=frame')
 
-class Recording(Resource):
-    def post(self):
+class RecorderState(Resource):
+    def get(self):
+        """Getting recorder state"""
+        return timeLapseRecorder.getState()
+
+api.add_resource(RecorderState, '/state')
+
+class StartRecording(Resource):
+    def put(self):
         """Start recording"""
         settings = request.get_json()
         app.logger.debug('Received settings for time lapse:' + settings['timelapseName'])
         app.logger.info('Starting to record time lapse: ' + settings['timelapseName'])
         return jsonify({'result': 'Success', 'message': 'Stating to record ' + settings['timelapseName']})
-    def delete(self):
+
+api.add_resource(StartRecording, '/recording/start')
+
+class StopRecording(Resource):
+    def put(self):
         """Stop recording"""
         app.logger.info('Stopping to record time lapse')
         return jsonify({'result': 'Success', 'message': 'Stopping to record'})
 
-
-api.add_resource(Recording, '/recording')
+api.add_resource(StopRecording, '/recording/stop')
 
 if __name__ == '__main__':
     app.run(host='0.0.0.0', port =5000, debug=True, threaded=True)
