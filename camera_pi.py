@@ -33,23 +33,6 @@ class Camera(object):
     stream = StreamingOutput()
 
     def initialize(self):
-        if Camera.thread is None:
-            # start background frame thread
-            Camera.thread = threading.Thread(target=self._thread)
-            Camera.thread.start()
-
-            # wait until frames start to be available
-            while self.stream.frame is None:
-                time.sleep(0)
-
-    def get_frame(self):
-        with self.stream.condition:
-            self.stream.condition.wait()
-            return (b'--frame\r\n'
-               b'Content-Type: image/jpeg\r\n\r\n' + self.stream.frame + b'\r\n')
-
-    @classmethod
-    def _thread(cls):
         with picamera.PiCamera(resolution='1920x1080', framerate=24) as camera:
             # camera setup
             # camera.hflip = True
@@ -59,4 +42,32 @@ class Camera(object):
             # camera.start_preview()
             time.sleep(2)
 
-            camera.start_recording(cls.stream, format='mjpeg')
+            camera.start_recording(self.stream, format='mjpeg')
+
+        # if Camera.thread is None:
+        #     # start background frame thread
+        #     Camera.thread = threading.Thread(target=self._thread)
+        #     Camera.thread.start()
+
+        #     # wait until frames start to be available
+        #     while self.stream.frame is None:
+        #         time.sleep(0)
+
+    def get_frame(self):
+        with self.stream.condition:
+            self.stream.condition.wait()
+            return (b'--frame\r\n'
+               b'Content-Type: image/jpeg\r\n\r\n' + self.stream.frame + b'\r\n')
+
+    # @classmethod
+    # def _thread(cls):
+    #     with picamera.PiCamera(resolution='1920x1080', framerate=24) as camera:
+    #         # camera setup
+    #         # camera.hflip = True
+    #         # camera.vflip = True
+
+    #         # let camera warm up
+    #         # camera.start_preview()
+    #         time.sleep(2)
+
+    #         camera.start_recording(cls.stream, format='mjpeg')
