@@ -67,6 +67,7 @@ class TimelapseRecorder(object):
             print(frameCount)
             print(' of ')
             print(cls.settings['totalFrameCount'])
+            cls.camera.capture(cls.workingDir + cls.settings['timelapseName'] + str(frameCount) + '.jpg', use_video_port=True)
             frameCount += 1
             time.sleep(cls.settings['frameDelay'])
             if frameCount > cls.settings['totalFrameCount']:
