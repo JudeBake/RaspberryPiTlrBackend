@@ -3,7 +3,9 @@ from flask_restful import Resource, Api
 from flask_jsonpify import jsonify
 from flask_cors import CORS
 
+import io
 import time
+from threading import Condition
 
 # Raspberry Pi camera module (requires picamera package, developed by Miguel Grinberg)
 from picamera import PiCamera
@@ -43,21 +45,22 @@ def index():
     """Video streaming home page."""
     return render_template('index.html')
 
-def gen(camera):
+def gen():
     """Video streaming generator function."""
+    app.logger.info('Entering generator')
     while True:
         with output.condition:
+            app.logger.info('Waiting for next frame')
             output.condition.wait()
             frame = output.frame
         yield (b'--frame\r\n'
-               b'Content-Type: image/jpeg\r\n'
-               b'Content-Length: '+len(frame)+'\r\n\r\n' + frame + b'\r\n')
+               b'Content-Type: image/jpeg\r\n\r\n'
+               + frame + b'\r\n')
 
 @app.route('/video_feed')
 def video_feed():
     """Video streaming route. Put this in the src attribute of an img tag."""
-    return Response(gen(camera),
-                    mimetype='multipart/x-mixed-replace; boundary=frame')
+    return Response(gen(), mimetype='multipart/x-mixed-replace; boundary=frame')
 
 class RecorderState(Resource):
     def get(self):
@@ -85,4 +88,4 @@ class StopRecording(Resource):
 api.add_resource(StopRecording, '/recording/stop')
 
 if __name__ == '__main__':
-app.run(host='0.0.0.0', port =5000, debug=True, threaded=True)
+    app.run(host='0.0.0.0', port =5000, debug=True, threaded=True)
