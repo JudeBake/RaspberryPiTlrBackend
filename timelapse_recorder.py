@@ -5,11 +5,11 @@
 #  
 #  
 #
-import logging
 import os
 import threading
 
 class TimelapseRecorder(object):
+    logger = None
     camera = None
     thread = None
     workingDir = '/home/pi/timelapse/'
@@ -17,8 +17,9 @@ class TimelapseRecorder(object):
     settings = {'timelaspeName': '', 'totalFrameCount': 0}
     stopRecordingThread = False
 
-    def __init__(self, camera):
+    def __init__(self, camera, logger):
         TimelapseRecorder.camera = camera
+        TimelapseRecorder.logger = logger
 
     def getState(self):
         if TimelapseRecorder.thread is None:
@@ -29,7 +30,7 @@ class TimelapseRecorder(object):
     def startRecording(self, settings):
         """Start recording a timelapse"""
         if self.__setupTimelapseDir(settings['timelapseName']):
-            logging.debug('Recording time lapse ' + settings['timelapseName'])
+            TimelapseRecorder.logger.info('Recording time lapse ' + settings['timelapseName'])
             TimelapseRecorder.settings = settings
             TimelapseRecorder.stopRecordingThread = False
             TimelapseRecorder.thread = threading.Thread(target=self.__recording)
@@ -37,12 +38,12 @@ class TimelapseRecorder(object):
             return {'result': 'success', 'message': 'Recording of time-lapse ' +
                     TimelapseRecorder.settings['timelapseName'] + ' started!'}
         else:
-            logging.debug('Stop recording current time-lapse')
+            TimelapseRecorder.logger.info('Stop recording current time-lapse')
             return {'result': 'failure', 'message': 'Time-lapse already exists!'}
 
     def stopRecording(self):
         """Stop recording the current timelapse"""
-        logging.debug('Stop recording current timelapse')
+        TimelapseRecorder.logger.info('Stop recording current timelapse')
         TimelapseRecorder.stopRecordingThread = True
         return {'result': 'success', 'message': 'Recording time-lapse ' +
                 TimelapseRecorder.settings['timelapseName'] + ' stopped!'}
@@ -58,11 +59,11 @@ class TimelapseRecorder(object):
 
     @classmethod
     def __recording(cls):
-        logging.debug('Recording thread started')
+        TimelapseRecorder.logger.info('Recording thread started')
         frameCount = 0
 
         while not cls.stopRecordingThread:
-            logging.debug('Capturing frame #' + frameCount + ' of ' + cls.settings['totalFrameCount'])
+            TimelapseRecorder.logger.info('Capturing frame #' + frameCount + ' of ' + cls.settings['totalFrameCount'])
             if frameCount > cls.settings['totalFrameCount']:
                 cls.stopRecordingThread = True
         cls.thread = None
