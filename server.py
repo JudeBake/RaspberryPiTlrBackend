@@ -4,6 +4,9 @@ import logging
 import socketserver
 from http import server
 from threading import Condition
+import json
+
+from timelapse_recorder import TimelapseRecorder
 
 PAGE="""\
 <html>
@@ -48,6 +51,12 @@ class StreamingHandler(server.BaseHTTPRequestHandler):
             self.send_header('Content-Length', len(content))
             self.end_headers()
             self.wfile.write(content)
+        elif self.path == '/state':
+            json_str = json.dumps(timelapseRecorder.getState())
+            self.send_response(200)
+            self.send_header('Content-Type', 'application/json')
+            self.end_headers()
+            self.wfile.write(json_str.encode(encoding='utf_8'))
         elif self.path == '/video_feed':
             self.send_response(200)
             self.send_header('Age', 0)
@@ -82,6 +91,7 @@ with picamera.PiCamera(resolution='640x480', framerate=24) as camera:
     output = StreamingOutput()
     camera.start_recording(output, format='mjpeg')
     try:
+        timelapseRecorder = timelapseRecorder(camera)
         address = ('', 5000)
         server = StreamingServer(address, StreamingHandler)
         server.serve_forever()
