@@ -42,7 +42,7 @@ class StreamingHandler(server.BaseHTTPRequestHandler):
     def do_GET(self):
         handleGet(self)
 
-# Requestion handling functions
+# GET Handling function
 def handleGet(reqHandler):
     if reqHandler.path == '/':
         reqHandler.send_response(301)
