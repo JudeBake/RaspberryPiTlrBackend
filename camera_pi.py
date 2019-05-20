@@ -4,7 +4,8 @@
 #  camera_pi.py
 #  
 #  
-#  
+#
+import logging  
 import time
 import io
 import threading
@@ -28,46 +29,24 @@ class StreamingOutput(object):
         return self.buffer.write(buf)
 
 class Camera(object):
-    thread = None  # background thread that reads frames from camera
-    last_access = 0  # time of last client access to the camera
-    stream = StreamingOutput()
+    def __init__(self):
+        logging.info('Initializing camera')
+        self.stream = StreamingOutput()
+        self.camera = picamera.PiCamera(resolution='1920x1080', framerate=24)
+        time.sleep(2)
+        self.camera.start_recording(self.stream, format='mjpeg')
 
-    def initialize(self):
-        with picamera.PiCamera(resolution='1920x1080', framerate=24) as camera:
-            # camera setup
-            # camera.hflip = True
-            # camera.vflip = True
+    def __enter__(self):
+        return self
 
-            # let camera warm up
-            # camera.start_preview()
-            time.sleep(2)
+    def __exit__(self, exc_type, exc_val, exc_tb):
+        this.camera.close()
 
-            camera.start_recording(self.stream, format='mjpeg')
-
-        # if Camera.thread is None:
-        #     # start background frame thread
-        #     Camera.thread = threading.Thread(target=self._thread)
-        #     Camera.thread.start()
-
-        #     # wait until frames start to be available
-        #     while self.stream.frame is None:
-        #         time.sleep(0)
+    def stopRecording(self):
+        self.camera.stop_recording()
 
     def get_frame(self):
         with self.stream.condition:
             self.stream.condition.wait()
             return (b'--frame\r\n'
                b'Content-Type: image/jpeg\r\n\r\n' + self.stream.frame + b'\r\n')
-
-    # @classmethod
-    # def _thread(cls):
-    #     with picamera.PiCamera(resolution='1920x1080', framerate=24) as camera:
-    #         # camera setup
-    #         # camera.hflip = True
-    #         # camera.vflip = True
-
-    #         # let camera warm up
-    #         # camera.start_preview()
-    #         time.sleep(2)
-
-    #         camera.start_recording(cls.stream, format='mjpeg')
