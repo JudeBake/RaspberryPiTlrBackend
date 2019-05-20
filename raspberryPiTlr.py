@@ -38,7 +38,7 @@ app = Flask(__name__)
 cors = CORS(app, resources={r"/*": {"origins": "*"}})
 api = Api(app)
 
-timeLapseRecorder = TimelapseRecorder(camera, app.logger)
+timeLapseRecorder = TimelapseRecorder(camera)
 
 @app.route('/')
 def index():
@@ -47,10 +47,8 @@ def index():
 
 def gen():
     """Video streaming generator function."""
-    app.logger.info('Entering generator')
     while True:
         with output.condition:
-            app.logger.info('Waiting for next frame')
             output.condition.wait()
             frame = output.frame
         yield (b'--frame\r\n'
@@ -73,8 +71,8 @@ class StartRecording(Resource):
     def put(self):
         """Start recording"""
         settings = request.get_json()
-        app.logger.debug('Received settings for time lapse:' + settings['timelapseName'])
-        app.logger.info('Starting to record time lapse: ' + settings['timelapseName'])
+        print('Starting to record time lapse: ' + settings['timelapseName'])
+        print('Frame count: ' + settings['totalFrameCount'])
         return jsonify({'result': 'Success', 'message': 'Stating to record ' + settings['timelapseName']})
 
 api.add_resource(StartRecording, '/recording/start')
@@ -82,7 +80,7 @@ api.add_resource(StartRecording, '/recording/start')
 class StopRecording(Resource):
     def put(self):
         """Stop recording"""
-        app.logger.info('Stopping to record time lapse')
+        print('Stopping to record time lapse')
         return jsonify({'result': 'Success', 'message': 'Stopping to record'})
 
 api.add_resource(StopRecording, '/recording/stop')
