@@ -58,11 +58,11 @@ class TimelapseRecorder(object):
 
     @classmethod
     def __recording(cls):
-        cls.logger.debug('Recording thread started')
+        logging.debug('Recording thread started')
         frameCount = 0
 
         while not cls.stopRecordingThread:
-            cls.logger.debug('Capturing frame #' + frameCount + ' of ' + cls.settings['totalFrameCount'])
+            logging.debug('Capturing frame #' + frameCount + ' of ' + cls.settings['totalFrameCount'])
             if frameCount > cls.settings['totalFrameCount']:
                 cls.stopRecordingThread = True
         cls.thread = None

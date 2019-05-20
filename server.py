@@ -41,6 +41,7 @@ class StreamingOutput(object):
 class StreamingHandler(server.BaseHTTPRequestHandler):
     def do_GET(self):
         handleGet(self)
+    def do_PUT(self):
 
 # GET Handling function
 def handleGet(reqHandler):
@@ -59,6 +60,7 @@ def handleGet(reqHandler):
         json_str = json.dumps(timelapseRecorder.getState())
         reqHandler.send_response(200)
         reqHandler.send_header('Content-Type', 'application/json')
+        reqHandler.send_header('Access-Control-Allow-Origin', '*')
         reqHandler.end_headers()
         reqHandler.wfile.write(json_str.encode(encoding='utf_8'))
     elif reqHandler.path == '/video_feed':
@@ -83,6 +85,28 @@ def handleGet(reqHandler):
             logging.warning(
                 'Removed streaming client %s: %s',
                 reqHandler.client_address, str(e))
+    else:
+        reqHandler.send_error(404)
+        reqHandler.end_headers()
+
+# PUT handling function
+def handlePut(reqHandler):
+    if reqHandler == '/recording/start':
+        logger.debug('Handling PUT /recording/start')
+        json_str = json.dumps(timelapseRecorder.startRecording())
+        reqHandler.send_response(200)
+        reqHandler.send_header('Content-Type', 'application/json')
+        reqHandler.send_header('Access-Control-Allow-Origin', '*')
+        reqHandler.end_headers()
+        reqHandler.wfile.write(json_str.encode(encoding='utf_8'))
+    elif reqHandler == '/recording/stop':
+        logger.debug('Handling PUT /recording/stop')
+        json_str = json.dumps(timelapseRecorder.stopRecording())
+        reqHandler.send_response(200)
+        reqHandler.send_header('Content-Type', 'application/json')
+        reqHandler.send_header('Access-Control-Allow-Origin', '*')
+        reqHandler.end_headers()
+        reqHandler.wfile.write(json_str.encode(encoding='utf_8'))
     else:
         reqHandler.send_error(404)
         reqHandler.end_headers()
