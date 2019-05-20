@@ -10,11 +10,27 @@ import io
 import threading
 import picamera
 
+class StreamingOutput(object):
+    def __init__(self):
+        self.frame = None
+        self.buffer = io.BytesIO()
+        self.condition = threading.Condition()
+
+    def write(self, buf):
+        if buf.startswith(b'\xff\xd8'):
+            # New frame, copy the existing buffer's content and notify all
+            # clients it's available
+            self.buffer.truncate()
+            with self.condition:
+                self.frame = self.buffer.getvalue()
+                self.condition.notify_all()
+            self.buffer.seek(0)
+        return self.buffer.write(buf)
 
 class Camera(object):
     thread = None  # background thread that reads frames from camera
-    frame = None  # current frame is stored here by background thread
     last_access = 0  # time of last client access to the camera
+    stream = StreamingOutput()
 
     def initialize(self):
         if Camera.thread is None:
@@ -23,19 +39,19 @@ class Camera(object):
             Camera.thread.start()
 
             # wait until frames start to be available
-            while self.frame is None:
+            while self.stream.frame is None:
                 time.sleep(0)
 
     def get_frame(self):
-        Camera.last_access = time.time()
-        self.initialize()
-        return self.frame
+        with self.stream.condition:
+            self.stream.condition.wait()
+            return (b'--frame\r\n'
+               b'Content-Type: image/jpeg\r\n\r\n' + self.stream.frame + b'\r\n')
 
     @classmethod
     def _thread(cls):
-        with picamera.PiCamera() as camera:
+        with picamera.PiCamera(resolution='1920x1080', framerate=24) as camera:
             # camera setup
-            camera.resolution = (1920, 1080)
             # camera.hflip = True
             # camera.vflip = True
 
@@ -43,19 +59,4 @@ class Camera(object):
             # camera.start_preview()
             time.sleep(2)
 
-            stream = io.BytesIO()
-            for foo in camera.capture_continuous(stream, 'jpeg',
-                                                 use_video_port=True):
-                # store frame
-                stream.seek(0)
-                cls.frame = stream.read()
-
-                # reset stream for next frame
-                stream.seek(0)
-                stream.truncate()
-
-                # if there hasn't been any clients asking for frames in
-                # the last 10 seconds stop the thread
-                if time.time() - cls.last_access > 10:
-                    break
-        cls.thread = None
+            camera.start_recording(cls.stream, format='mjpeg')
