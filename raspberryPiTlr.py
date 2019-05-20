@@ -72,7 +72,9 @@ class StartRecording(Resource):
         """Start recording"""
         settings = request.get_json()
         print('Starting to record time lapse: ' + settings['timelapseName'])
-        print('Frame count: ' + settings['totalFrameCount'])
+        print('Frame count: ')
+        print(settings['totalFrameCount'])
+        timeLapseRecorder.startRecording(settings)
         return jsonify({'result': 'Success', 'message': 'Stating to record ' + settings['timelapseName']})
 
 api.add_resource(StartRecording, '/recording/start')

@@ -2,8 +2,8 @@
 # -*- coding: utf-8 -*-
 #
 #  timelapse_recorder.py
-#  
-#  
+#
+#
 #
 import os
 import threading
@@ -30,7 +30,7 @@ class TimelapseRecorder(object):
     def startRecording(self, settings):
         """Start recording a timelapse"""
         if self.__setupTimelapseDir(settings['timelapseName']):
-            print('Recording time lapse ' + settings['timelapseName'])
+            print(settings['timelapseName'])
             TimelapseRecorder.settings = settings
             TimelapseRecorder.stopRecordingThread = False
             TimelapseRecorder.thread = threading.Thread(target=self.__recording)
@@ -60,12 +60,16 @@ class TimelapseRecorder(object):
     @classmethod
     def __recording(cls):
         print('Recording thread started')
-        frameCount = 0
+        frameCount = 1
 
         while not cls.stopRecordingThread:
-            print('Capturing frame #' + frameCount + ' of ' + cls.settings['totalFrameCount'])
+            print('Capturing frame number: ')
+            print(frameCount)
+            print(' of ')
+            print(cls.settings['totalFrameCount'])
+            frameCount += 1
             time.sleep(cls.settings['frameDelay'])
             if frameCount > cls.settings['totalFrameCount']:
                 cls.stopRecordingThread = True
         cls.thread = None
-        
+
