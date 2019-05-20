@@ -39,9 +39,17 @@ class StreamingOutput(object):
         return self.buffer.write(buf)
 
 class ServerHandler(server.BaseHTTPRequestHandler):
+    def do_OPTIONS(self):
+        json_str = json.dumps(timelapseRecorder.getState())
+        self.send_response(200)
+        self.send_header('Content-Type', 'application/json')
+        self.send_header('Access-Control-Allow-Origin', '*')
+        self.send_header('Access-Control-Allow-Methods', 'GET,PUT,POST,DELETE')
+        self.end_headers()
+        self.wfile.write(json_str.encode(encoding='utf_8'))
     def do_GET(self):
         self.__handleGet()
-    def do_OPTIONS(self):
+    def do_PUT(self):
         self.__handlePut()
     # GET Handling function
     def __handleGet(self):
