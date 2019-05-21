@@ -66,10 +66,9 @@ class TimelapseRecorder(object):
         TimelapseRecorder.timelapseName = settings['timelapseName']
         TimelapseRecorder.timelapseDir = os.path.join(TimelapseRecorder.workingDir,
                                                       settings['timelapseName'])
-        TimelapseRecorder.timelapseFile = os.path.join(TimelapseRecorder.workingDir,
+        TimelapseRecorder.timelapseFile = os.path.join(TimelapseRecorder.timelapseDir,
                                                        settings['timelapseName'] + '.mp4')
-        TimelapseRecorder.stillsNameFormat = os.path.join(TimelapseRecorder.workingDir,
-                                                          settings['timelapseName'],
+        TimelapseRecorder.stillsNameFormat = os.path.join(TimelapseRecorder.timelapseDir,
                                                           '%05d.jpg')
         TimelapseRecorder.totalFrameCount = settings['totalFrameCount']
         TimelapseRecorder.frameDelay = settings['frameDelay']
