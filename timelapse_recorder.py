@@ -73,6 +73,10 @@ class TimelapseRecorder(object):
         TimelapseRecorder.totalFrameCount = settings['totalFrameCount']
         TimelapseRecorder.frameDelay = settings['frameDelay']
 
+    def cleanupDir(self):
+        stillsList = [still for still in os.listdir(TimelapseRecorder.timelapseDir) if still.endswith('.jpg')]
+        for still in stillsList:
+            os.remove(os.path.join(TimelapseRecorder.timelapseDir, still))
 
     @classmethod
     def __recording(cls):
@@ -87,6 +91,6 @@ class TimelapseRecorder(object):
                 cls.stopRecordingThread = True
         ffmpegCmd = "ffmpeg -r 30 -i " + TimelapseRecorder.stillsNameFormat + " -vcodec libx264 -preset veryslow -crf 18 " + TimelapseRecorder.timelapseFile
         os.system(ffmpegCmd)
-        os.remove(TimelapseRecorder.timelapseDir + '/*.jpg')
+        cls.cleanupDir
         cls.thread = None
 
