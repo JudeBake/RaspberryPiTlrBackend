@@ -38,7 +38,7 @@ app = Flask(__name__)
 cors = CORS(app, resources={r"/*": {"origins": "*"}})
 api = Api(app)
 
-timeLapseRecorder = TimelapseRecorder(camera)
+timelapseRecorder = TimelapseRecorder(camera, app.logger)
 
 @app.route('/')
 def index():
@@ -63,7 +63,7 @@ def video_feed():
 class RecorderState(Resource):
     def get(self):
         """Getting recorder state"""
-        return timeLapseRecorder.getState()
+        return timelapseRecorder.getState()
 
 api.add_resource(RecorderState, '/state')
 
@@ -71,18 +71,15 @@ class StartRecording(Resource):
     def put(self):
         """Start recording"""
         settings = request.get_json()
-        print('Starting to record time lapse: ' + settings['timelapseName'])
-        print('Frame count: ')
-        print(settings['totalFrameCount'])
-        timeLapseRecorder.startRecording(settings)
-        return jsonify({'result': 'Success', 'message': 'Stating to record ' + settings['timelapseName']})
+        app.logger.info('Starting to record time lapse: ' + settings['timelapseName'])
+        return jsonify(timelapseRecorder.startRecording(settings))
 
 api.add_resource(StartRecording, '/recording/start')
 
 class StopRecording(Resource):
     def put(self):
         """Stop recording"""
-        print('Stopping to record time lapse')
+        app.logger.info('Stopping to record time lapse')
         return jsonify({'result': 'Success', 'message': 'Stopping to record'})
 
 api.add_resource(StopRecording, '/recording/stop')
