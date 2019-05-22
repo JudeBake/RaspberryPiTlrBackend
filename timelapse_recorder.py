@@ -99,6 +99,7 @@ class TimelapseRecorder(object):
         TimelapseRecorder.recordingStep = 'Processing Time-lapse'
         ffmpegCmd = "ffmpeg -r 30 -i " + TimelapseRecorder.stillsNameFormat + " -vcodec libx264 -preset veryslow -crf 18 " + TimelapseRecorder.timelapseFile
         os.system(ffmpegCmd)
+        TimelapseRecorder.recordingStep = 'Cleanup'
         cls.cleanupDir()
         cls.thread = None
 

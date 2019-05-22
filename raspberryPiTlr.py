@@ -60,12 +60,12 @@ def video_feed():
     """Video streaming route. Put this in the src attribute of an img tag."""
     return Response(gen(), mimetype='multipart/x-mixed-replace; boundary=frame')
 
-class RecorderState(Resource):
+class RecorderStatus(Resource):
     def get(self):
-        """Getting recorder state"""
+        """Getting recorder status"""
         return timelapseRecorder.getStatus()
 
-api.add_resource(RecorderState, '/state')
+api.add_resource(RecorderStatus, '/status')
 
 class StartRecording(Resource):
     def put(self):
