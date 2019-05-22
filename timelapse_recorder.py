@@ -14,11 +14,13 @@ class TimelapseRecorder(object):
     camera = None
     thread = None
     workingDir = '/home/pi/timelapse'
-    progressMsg = 'Not recording right now!'
+    recordingStep = ''
+    progessValue = 0
     stopRecordingThread = False
     timelapseName = ''
     timelapseDir = ''
     timelapseFile = ''
+    frameCount = 0
     totalFrameCount = 0
     frameDelay = 1
     stillsNameFormat = ''
@@ -27,11 +29,13 @@ class TimelapseRecorder(object):
         TimelapseRecorder.logger = logger
         TimelapseRecorder.camera = camera
 
-    def getState(self):
+    def getStatus(self):
         if TimelapseRecorder.thread is None:
             return {'state': 'Idle'}
         else:
-            return {'state': 'Recording'}
+            return {'state': 'Recording',
+                    'progress': {'recordingStep': TimelapseRecorder.recordingStep,
+                                 'value': TimelapseRecorder.progessValue}}
 
     def startRecording(self, settings):
         """Start recording a timelapse"""
@@ -49,10 +53,10 @@ class TimelapseRecorder(object):
 
     def stopRecording(self):
         """Stop recording the current timelapse"""
-        Timelapse.logger.info('Stop recording current timelapse')
+        TimelapseRecorder.logger.info('Stop recording current timelapse')
         TimelapseRecorder.stopRecordingThread = True
         return {'result': 'success', 'message': 'Recording time-lapse ' +
-                TimelapseRecorder.settings['timelapseName'] + ' stopped!'}
+                TimelapseRecorder.timelapseName + ' stopped!'}
 
     def __setupTimelapseDir(self, dirName):
         """Create working directory for a timelapse"""
@@ -82,14 +86,17 @@ class TimelapseRecorder(object):
     @classmethod
     def __recording(cls):
         cls.logger.info('Recording thread started')
-        frameCount = 1
+        TimelapseRecorder.recordingStep = 'Capturing Frames'
+        TimelapseRecorder.frameCount = 1
 
         while not cls.stopRecordingThread:
-            cls.camera.capture(cls.stillsNameFormat % frameCount, use_video_port=True)
-            frameCount += 1
+            cls.camera.capture(cls.stillsNameFormat % TimelapseRecorder.frameCount, use_video_port=True)
+            TimelapseRecorder.frameCount += 1
+            TimelapseRecorder.progessValue = round(TimelapseRecorder.frameCount/TimelapseRecorder.totalFrameCount*100)
             time.sleep(cls.frameDelay)
-            if frameCount > cls.totalFrameCount:
+            if TimelapseRecorder.frameCount > cls.totalFrameCount:
                 cls.stopRecordingThread = True
+        TimelapseRecorder.recordingStep = 'Processing Time-lapse'
         ffmpegCmd = "ffmpeg -r 30 -i " + TimelapseRecorder.stillsNameFormat + " -vcodec libx264 -preset veryslow -crf 18 " + TimelapseRecorder.timelapseFile
         os.system(ffmpegCmd)
         cls.cleanupDir()

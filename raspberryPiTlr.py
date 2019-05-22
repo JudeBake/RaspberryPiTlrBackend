@@ -63,7 +63,7 @@ def video_feed():
 class RecorderState(Resource):
     def get(self):
         """Getting recorder state"""
-        return timelapseRecorder.getState()
+        return timelapseRecorder.getStatus()
 
 api.add_resource(RecorderState, '/state')
 
