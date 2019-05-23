@@ -13,11 +13,13 @@ class TimelapseRecorder(object):
     logger = None
     camera = None
     thread = None
+    socketio = None
     workingDir = '/home/pi/timelapse'
-    recordingStep = ''
-    progessValue = 0
     stopRecordingThread = False
+    state = ''
+    recordingStep = ''
     timelapseName = ''
+    timelapseEndTime = ''
     timelapseDir = ''
     timelapseFile = ''
     frameCount = 0
@@ -25,57 +27,74 @@ class TimelapseRecorder(object):
     frameDelay = 1
     stillsNameFormat = ''
 
-    def __init__(self, camera, logger):
+    def __init__(self, camera, logger, socketio):
         TimelapseRecorder.logger = logger
         TimelapseRecorder.camera = camera
+        TimelapseRecorder.socketio = socketio
+        TimelapseRecorder.state = 'Idle'
 
-    def getStatus(self):
-        if TimelapseRecorder.thread is None:
-            return {'state': 'Idle'}
+    @classmethod
+    def getStatus(cls):
+        if cls.thread is None:
+            return {'state': cls.state}
         else:
-            return {'state': 'Recording',
-                    'progress': {'recordingStep': TimelapseRecorder.recordingStep,
-                                 'value': TimelapseRecorder.progessValue}}
+            return {'state': cls.state,
+                    'timelapseInfo': {
+                        'name': cls.timelapseName,
+                        'capturingEndTime': cls.timelapseEndTime,
+                        'totalFrameCount': cls.totalFrameCount,
+                        'frameDelay': cls.frameDelay,
+                        'progress': {'recordingStep': cls.recordingStep,
+                                     'capturedFrames': cls.frameCount,
+                                    }
+                    }   
+                   }
 
-    def startRecording(self, settings):
+    @classmethod
+    def startRecording(cls, timelapseInfo):
         """Start recording a timelapse"""
-        if self.__setupTimelapseDir(settings['timelapseName']):
-            self.__saveSettings(settings)
-            TimelapseRecorder.logger.info('Start recording')
-            TimelapseRecorder.stopRecordingThread = False
-            TimelapseRecorder.thread = threading.Thread(target=self.__recording)
-            TimelapseRecorder.thread.start()
+        if cls.__setupTimelapseDir(timelapseInfo['timelapseName']):
+            cls.__saveInfo(timelapseInfo)
+            cls.logger.info('Start recording')
+            cls.stopRecordingThread = False
+            cls.thread = threading.Thread(target=cls.__recording)
+            cls.thread.start()
             return {'result': 'success', 'message': 'Recording of time-lapse ' +
-                    TimelapseRecorder.timelapseName + ' started!'}
+                    cls.timelapseName + ' started!'}
         else:
-            TimelapseRecorder.logger.info('Stop recording current time-lapse')
-            return {'result': 'failure', 'message': 'Time-lapse already exists!'}
+            cls.logger.info('Stop recording current time-lapse')
+            return {'result': 'failure', 'message': 'Time-lapse '
+                    + cls.timelapseName +' already exists!'}
 
-    def stopRecording(self):
+    @classmethod
+    def stopRecording(cls):
         """Stop recording the current timelapse"""
-        TimelapseRecorder.logger.info('Stop recording current timelapse')
-        TimelapseRecorder.stopRecordingThread = True
+        cls.logger.info('Stop recording current timelapse')
+        cls.stopRecordingThread = True
         return {'result': 'success', 'message': 'Recording time-lapse ' +
                 TimelapseRecorder.timelapseName + ' stopped!'}
 
-    def __setupTimelapseDir(self, dirName):
+    @classmethod
+    def __setupTimelapseDir(cls, dirName):
         """Create working directory for a timelapse"""
-        if os.path.isdir(TimelapseRecorder.workingDir + '/' + dirName):
+        if os.path.isdir(cls.workingDir + '/' + dirName):
             """Timelapse already exists"""
             return False
         else:
-            os.mkdir(self.workingDir + '/' + dirName)
+            os.mkdir(cls.workingDir + '/' + dirName)
             return True
-    def __saveSettings(self, settings):
-        TimelapseRecorder.timelapseName = settings['timelapseName']
-        TimelapseRecorder.timelapseDir = os.path.join(TimelapseRecorder.workingDir,
-                                                      settings['timelapseName'])
-        TimelapseRecorder.timelapseFile = os.path.join(TimelapseRecorder.timelapseDir,
-                                                       settings['timelapseName'] + '.mp4')
-        TimelapseRecorder.stillsNameFormat = os.path.join(TimelapseRecorder.timelapseDir,
-                                                          '%05d.jpg')
-        TimelapseRecorder.totalFrameCount = settings['totalFrameCount']
-        TimelapseRecorder.frameDelay = settings['frameDelay']
+
+    @classmethod
+    def __saveInfo(cls, timelapseInfo):
+        cls.timelapseName = timelapseInfo['timelapseName']
+        cls.timelapseDir = os.path.join(TimelapseRecorder.workingDir,
+                                        timelapseInfo['timelapseName'])
+        cls.timelapseFile = os.path.join(TimelapseRecorder.timelapseDir,
+                                         timelapseInfo['timelapseName'] + '.mp4')
+        cls.stillsNameFormat = os.path.join(TimelapseRecorder.timelapseDir,
+                                            '%05d.jpg')
+        cls.totalFrameCount = timelapseInfo['totalFrameCount']
+        cls.frameDelay = timelapseInfo['frameDelay']
 
     @classmethod
     def cleanupDir(cls):
@@ -86,20 +105,25 @@ class TimelapseRecorder(object):
     @classmethod
     def __recording(cls):
         cls.logger.info('Recording thread started')
-        TimelapseRecorder.recordingStep = 'Capturing Frames'
-        TimelapseRecorder.frameCount = 1
-
+        cls.state = 'Recording'
+        cls.recordingStep = 'Capturing Frames'
+        cls.frameCount = 0
+        cls.socketio.emit('statusUpdate', cls.getStatus())
         while not cls.stopRecordingThread:
-            cls.camera.capture(cls.stillsNameFormat % TimelapseRecorder.frameCount, use_video_port=True)
-            TimelapseRecorder.frameCount += 1
-            TimelapseRecorder.progessValue = round(TimelapseRecorder.frameCount/TimelapseRecorder.totalFrameCount*100)
+            cls.camera.capture(cls.stillsNameFormat % cls.frameCount, use_video_port=True)
+            cls.frameCount += 1
+            cls.socketio.emit('statusUpdate', cls.getStatus())
             time.sleep(cls.frameDelay)
-            if TimelapseRecorder.frameCount > cls.totalFrameCount:
+            if cls.frameCount > cls.totalFrameCount - 1:
                 cls.stopRecordingThread = True
-        TimelapseRecorder.recordingStep = 'Processing Time-lapse'
-        ffmpegCmd = "ffmpeg -r 30 -i " + TimelapseRecorder.stillsNameFormat + " -vcodec libx264 -preset veryslow -crf 18 " + TimelapseRecorder.timelapseFile
+        cls.recordingStep = 'Processing Time-lapse'
+        cls.socketio.emit('statusUpdate', cls.getStatus())
+        ffmpegCmd = "ffmpeg -r 30 -i " + cls.stillsNameFormat + " -vcodec libx264 -preset veryslow -crf 18 " + cls.timelapseFile
         os.system(ffmpegCmd)
-        TimelapseRecorder.recordingStep = 'Cleaning Up'
+        cls.recordingStep = 'Cleaning Up'
+        cls.socketio.emit('statusUpdate', cls.getStatus())
         cls.cleanupDir()
+        cls.state = 'Idle'
+        cls.socketio.emit('statusUpdate', {'state': cls.state})
         cls.thread = None
 

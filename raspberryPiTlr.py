@@ -1,5 +1,6 @@
 from flask import Flask, render_template, Response, request
 from flask_restful import Resource, Api
+from flask_socketio import SocketIO, emit
 from flask_jsonpify import jsonify
 from flask_cors import CORS
 
@@ -37,9 +38,14 @@ app = Flask(__name__)
 """For Dev only"""
 cors = CORS(app, resources={r"/*": {"origins": "*"}})
 api = Api(app)
+socketio = SocketIO(app)
 
-timelapseRecorder = TimelapseRecorder(camera, app.logger)
+# Timelapse recorder
+timelapseRecorder = TimelapseRecorder(camera, app.logger, socketio)
 
+#
+#  Static route for test and video feed
+#
 @app.route('/')
 def index():
     """Video streaming home page."""
@@ -59,6 +65,14 @@ def gen():
 def video_feed():
     """Video streaming route. Put this in the src attribute of an img tag."""
     return Response(gen(), mimetype='multipart/x-mixed-replace; boundary=frame')
+
+#
+# Web socket implementation
+#
+@socketio.on('connect')
+def on_connect():
+    socketio.emit('statusUpdate', timelapseRecorder.getStatus())
+
 
 class RecorderStatus(Resource):
     def get(self):
