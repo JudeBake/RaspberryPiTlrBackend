@@ -70,33 +70,13 @@ def video_feed():
 # Web socket implementation
 #
 @socketio.on('connect')
-def on_connect():
+def onConnect():
     socketio.emit('statusUpdate', timelapseRecorder.getStatus())
 
-
-class RecorderStatus(Resource):
-    def get(self):
-        """Getting recorder status"""
-        return timelapseRecorder.getStatus()
-
-api.add_resource(RecorderStatus, '/status')
-
-class StartRecording(Resource):
-    def put(self):
-        """Start recording"""
-        settings = request.get_json()
-        app.logger.info('Starting to record time lapse: ' + settings['timelapseName'])
-        return jsonify(timelapseRecorder.startRecording(settings))
-
-api.add_resource(StartRecording, '/recording/start')
-
-class StopRecording(Resource):
-    def put(self):
-        """Stop recording"""
-        app.logger.info('Stopping to record time lapse')
-        return jsonify({'result': 'Success', 'message': 'Stopping to record'})
-
-api.add_resource(StopRecording, '/recording/stop')
+@socketio.on('startRecording')
+def onStartRecording(timelapseInfo):
+    return {'result': 'success', 'message': 'Recording of time-lapse ' +
+                    timelapseInfo.timelapseName + ' started!'}
 
 if __name__ == '__main__':
     app.run(host='0.0.0.0', port =5000, debug=True, threaded=True)
