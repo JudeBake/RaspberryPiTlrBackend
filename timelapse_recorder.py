@@ -53,7 +53,7 @@ class TimelapseRecorder(object):
     @classmethod
     def startRecording(cls, timelapseInfo):
         """Start recording a timelapse"""
-        if cls.__setupTimelapseDir(timelapseInfo['timelapseName']):
+        if cls.__setupTimelapseDir(timelapseInfo['name']):
             cls.__saveInfo(timelapseInfo)
             cls.logger.info('Start recording')
             cls.stopRecordingThread = False
@@ -77,24 +77,25 @@ class TimelapseRecorder(object):
     @classmethod
     def __setupTimelapseDir(cls, dirName):
         """Create working directory for a timelapse"""
-        if os.path.isdir(cls.workingDir + '/' + dirName):
+        if os.path.isdir(os.path.join(cls.workingDir, dirName)):
             """Timelapse already exists"""
             return False
         else:
-            os.mkdir(cls.workingDir + '/' + dirName)
+            os.mkdir(os.path.join(cls.workingDir, dirName))
             return True
 
     @classmethod
     def __saveInfo(cls, timelapseInfo):
-        cls.timelapseName = timelapseInfo['timelapseName']
+        cls.timelapseName = timelapseInfo['name']
         cls.timelapseDir = os.path.join(TimelapseRecorder.workingDir,
-                                        timelapseInfo['timelapseName'])
+                                        timelapseInfo['name'])
         cls.timelapseFile = os.path.join(TimelapseRecorder.timelapseDir,
-                                         timelapseInfo['timelapseName'] + '.mp4')
+                                         timelapseInfo['name'] + '.mp4')
         cls.stillsNameFormat = os.path.join(TimelapseRecorder.timelapseDir,
                                             '%05d.jpg')
         cls.totalFrameCount = timelapseInfo['totalFrameCount']
         cls.frameDelay = timelapseInfo['frameDelay']
+        cls.timelapseEndTime = timelapseInfo['capturingEndTime']
 
     @classmethod
     def cleanupDir(cls):
