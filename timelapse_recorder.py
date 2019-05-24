@@ -8,6 +8,7 @@
 import os
 import threading
 import time
+from datetime import datetime, timedelta
 
 class TimelapseRecorder(object):
     logger = None
@@ -19,11 +20,12 @@ class TimelapseRecorder(object):
     state = ''
     recordingStep = ''
     timelapseName = ''
-    timelapseEndTime = ''
+    timelapseEndTime = None
+    timelaspeTotalRecTime = None
+    timelaspeRemainingTime = None
     timelapseDir = ''
     timelapseFile = ''
     frameCount = 0
-    totalFrameCount = 0
     frameDelay = 1
     stillsNameFormat = ''
 
@@ -41,11 +43,11 @@ class TimelapseRecorder(object):
             return {'state': cls.state,
                     'timelapseInfo': {
                         'name': cls.timelapseName,
-                        'capturingEndTime': cls.timelapseEndTime,
-                        'totalFrameCount': cls.totalFrameCount,
+                        'capturingEndTime': cls.timelapseEndTime.strftime('%y-%m-%d %H:%M:%S'),
                         'frameDelay': cls.frameDelay,
                         'progress': {'recordingStep': cls.recordingStep,
-                                     'capturedFrames': cls.frameCount,
+                                     'remainingTime': cls.timelaspeRemainingTime.total_seconds(),
+                                     'totalRecordingTime': cls.timelaspeTotalRecTime.total_seconds()
                                     }
                     }   
                    }
@@ -93,12 +95,17 @@ class TimelapseRecorder(object):
                                          timelapseInfo['name'] + '.mp4')
         cls.stillsNameFormat = os.path.join(TimelapseRecorder.timelapseDir,
                                             '%05d.jpg')
-        cls.totalFrameCount = timelapseInfo['totalFrameCount']
         cls.frameDelay = timelapseInfo['frameDelay']
-        cls.timelapseEndTime = timelapseInfo['capturingEndTime']
+        cls.timelapseEndTime = datetime.strptime(timelapseInfo['capturingEndTime'], '%y-%m-%d %H:%M:%S')
+        cls.timelaspeRemainingTime = 0
+        cls.timelaspeTotalRecTime = cls.__calculateRemainingTime()
 
     @classmethod
-    def cleanupDir(cls):
+    def __calculateRemainingTime(cls):
+        return cls.timelapseEndTime - datetime.now()
+
+    @classmethod
+    def __cleanupDir(cls):
         stillsList = [still for still in os.listdir(cls.timelapseDir) if still.endswith('.jpg')]
         for still in stillsList:
             os.remove(os.path.join(cls.timelapseDir, still))
@@ -108,14 +115,13 @@ class TimelapseRecorder(object):
         cls.logger.info('Recording thread started')
         cls.state = 'Recording'
         cls.recordingStep = 'Capturing Frames'
-        cls.frameCount = 0
         cls.socketio.emit('statusUpdate', cls.getStatus())
         while not cls.stopRecordingThread:
             cls.camera.capture(cls.stillsNameFormat % cls.frameCount, use_video_port=True)
             cls.frameCount += 1
             cls.socketio.emit('statusUpdate', cls.getStatus())
             time.sleep(cls.frameDelay)
-            if cls.frameCount > cls.totalFrameCount - 1:
+            if cls.__calculateRemainingTime().total_seconds() <= 0:
                 cls.stopRecordingThread = True
         cls.recordingStep = 'Processing Time-lapse'
         cls.socketio.emit('statusUpdate', cls.getStatus())
@@ -123,7 +129,7 @@ class TimelapseRecorder(object):
         os.system(ffmpegCmd)
         cls.recordingStep = 'Cleaning Up'
         cls.socketio.emit('statusUpdate', cls.getStatus())
-        cls.cleanupDir()
+        cls.__cleanupDir()
         cls.state = 'Idle'
         cls.socketio.emit('statusUpdate', {'state': cls.state})
         cls.thread = None
