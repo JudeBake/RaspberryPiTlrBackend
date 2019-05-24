@@ -73,8 +73,7 @@ def onConnect():
 
 @socketio.on('startRecording')
 def onStartRecording(timelapseInfo):
-    return {'result': 'success', 'message': 'Recording of time-lapse ' +
-                    timelapseInfo['name'] + ' started!'}
+    return timelapseRecorder.startRecording(timelapseInfo)
 
 if __name__ == '__main__':
     app.run(host='0.0.0.0', port =5000, debug=False, threaded=True)
