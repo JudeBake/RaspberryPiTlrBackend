@@ -1,5 +1,4 @@
 from flask import Flask, render_template, Response, request
-from flask_restful import Resource, Api
 from flask_socketio import SocketIO, emit
 from flask_jsonpify import jsonify
 from flask_cors import CORS
@@ -37,7 +36,6 @@ camera.start_recording(output, format='mjpeg')
 app = Flask(__name__)
 """For Dev only"""
 cors = CORS(app, resources={r"/*": {"origins": "*"}})
-api = Api(app)
 socketio = SocketIO(app)
 
 # Timelapse recorder
