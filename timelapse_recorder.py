@@ -21,8 +21,8 @@ class TimelapseRecorder(object):
     recordingStep = ''
     timelapseName = ''
     timelapseEndTime = None
-    timelaspeTotalRecTime = None
-    timelaspeRemainingTime = None
+    timelapseTotalRecTime = None
+    timelapseeRemainingTime = None
     timelapseDir = ''
     timelapseFile = ''
     frameCount = 0
@@ -46,10 +46,10 @@ class TimelapseRecorder(object):
                         'capturingEndTime': cls.timelapseEndTime.strftime('%y-%m-%d %H:%M:%S'),
                         'frameDelay': cls.frameDelay,
                         'progress': {'recordingStep': cls.recordingStep,
-                                     'remainingTime': cls.timelaspeRemainingTime.total_seconds(),
-                                     'totalRecordingTime': cls.timelaspeTotalRecTime.total_seconds()
+                                     'remainingTime': cls.timelapseRemainingTime.total_seconds(),
+                                     'totalRecordingTime': cls.timelapseTotalRecTime.total_seconds()
                                     }
-                    }   
+                    }
                    }
 
     @classmethod
@@ -96,9 +96,9 @@ class TimelapseRecorder(object):
         cls.stillsNameFormat = os.path.join(TimelapseRecorder.timelapseDir,
                                             '%05d.jpg')
         cls.frameDelay = timelapseInfo['frameDelay']
-        cls.timelapseEndTime = datetime.strptime(timelapseInfo['capturingEndTime'], '%y-%m-%d %H:%M:%S')
-        cls.timelaspeRemainingTime = 0
-        cls.timelaspeTotalRecTime = cls.__calculateRemainingTime()
+        cls.timelapseEndTime = datetime.strptime(timelapseInfo['capturingEndTime'], '%Y-%m-%d %H:%M:%S')
+        cls.timelapseRemainingTime = cls.__calculateRemainingTime()
+        cls.timelapseTotalRecTime = cls.__calculateRemainingTime()
 
     @classmethod
     def __calculateRemainingTime(cls):
@@ -114,16 +114,18 @@ class TimelapseRecorder(object):
     def __recording(cls):
         cls.logger.info('Recording thread started')
         cls.state = 'Recording'
-        cls.recordingStep = 'Capturing Frames'
+        cls.recordingStep = 'Capturing'
         cls.socketio.emit('statusUpdate', cls.getStatus())
+        cls.frameCount = 0
         while not cls.stopRecordingThread:
             cls.camera.capture(cls.stillsNameFormat % cls.frameCount, use_video_port=True)
             cls.frameCount += 1
             cls.socketio.emit('statusUpdate', cls.getStatus())
             time.sleep(cls.frameDelay)
-            if cls.__calculateRemainingTime().total_seconds() <= 0:
+            cls.timelapseRemainingTime = cls.__calculateRemainingTime()
+            if cls.timelapseRemainingTime.total_seconds() <= 0:
                 cls.stopRecordingThread = True
-        cls.recordingStep = 'Processing Time-lapse'
+        cls.recordingStep = 'Processing'
         cls.socketio.emit('statusUpdate', cls.getStatus())
         ffmpegCmd = "ffmpeg -r 30 -i " + cls.stillsNameFormat + " -vcodec libx264 -preset veryslow -crf 18 " + cls.timelapseFile
         os.system(ffmpegCmd)
