@@ -75,5 +75,13 @@ def onConnect():
 def onStartRecording(timelapseInfo):
     return timelapseRecorder.startRecording(timelapseInfo)
 
+@socketio.on('stopAndProcess')
+def onStopAndProcess():
+    return timelapseRecorder.stopAndProcessTimelapse()
+
+@socketio.on('stopAndDiscard')
+def onStopAndDiscard():
+    return timelapseRecorder.stopAndDiscardTimelapse()
+
 if __name__ == '__main__':
     app.run(host='0.0.0.0', port =5000, debug=False, threaded=True)

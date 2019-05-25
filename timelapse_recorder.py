@@ -16,7 +16,8 @@ class TimelapseRecorder(object):
     thread = None
     socketio = None
     workingDir = '/home/pi/timelapse'
-    stopRecordingThread = False
+    stopAndProcess = False
+    stopAndDiscard = False
     state = ''
     recordingStep = ''
     timelapseName = ''
@@ -58,7 +59,8 @@ class TimelapseRecorder(object):
         if cls.__setupTimelapseDir(timelapseInfo['name']):
             cls.__saveInfo(timelapseInfo)
             cls.logger.info('Start recording')
-            cls.stopRecordingThread = False
+            cls.stopAndProcess = False
+            cls.stopAndDiscard = False
             cls.thread = threading.Thread(target=cls.__recording)
             cls.thread.start()
             return {'result': 'success', 'message': 'Recording of time-lapse ' +
@@ -69,12 +71,20 @@ class TimelapseRecorder(object):
                     + cls.timelapseName +' already exists!'}
 
     @classmethod
-    def stopRecording(cls):
-        """Stop recording the current timelapse"""
+    def stopAndProcessTimelapse(cls):
+        """Stop recording and process the current timelapse"""
         cls.logger.info('Stop recording current timelapse')
-        cls.stopRecordingThread = True
-        return {'result': 'success', 'message': 'Recording time-lapse ' +
-                TimelapseRecorder.timelapseName + ' stopped!'}
+        cls.stopAndProcess = True
+        return {'result': 'success', 'message': 'Recording stopped. Now processing "' +
+                TimelapseRecorder.timelapseName + '"'}
+
+    @classmethod
+    def stopAndDiscardTimelapse(cls):
+        """Stop recording and discard the current timelapse"""
+        cls.logger.info('Stop recording current timelapse')
+        cls.stopAndDiscard = True
+        return {'result': 'success', 'message': 'Recording stopped. Discarding "' +
+                TimelapseRecorder.timelapseName + '"'}
 
     @classmethod
     def __setupTimelapseDir(cls, dirName):
@@ -117,21 +127,24 @@ class TimelapseRecorder(object):
         cls.recordingStep = 'Capturing'
         cls.socketio.emit('statusUpdate', cls.getStatus())
         cls.frameCount = 0
-        while not cls.stopRecordingThread:
+        while not cls.stopAndProcess and not cls.stopAndDiscard:
             cls.camera.capture(cls.stillsNameFormat % cls.frameCount, use_video_port=True)
             cls.frameCount += 1
             cls.socketio.emit('statusUpdate', cls.getStatus())
             time.sleep(cls.frameDelay)
             cls.timelapseRemainingTime = cls.__calculateRemainingTime()
             if cls.timelapseRemainingTime.total_seconds() <= 0:
-                cls.stopRecordingThread = True
-        cls.recordingStep = 'Processing'
-        cls.socketio.emit('statusUpdate', cls.getStatus())
-        ffmpegCmd = "ffmpeg -r 30 -i " + cls.stillsNameFormat + " -vcodec libx264 -preset veryslow -crf 18 " + cls.timelapseFile
-        os.system(ffmpegCmd)
+                cls.stopAndProcess = True
+        if cls.stopAndProcess:
+            cls.recordingStep = 'Processing'
+            cls.socketio.emit('statusUpdate', cls.getStatus())
+            ffmpegCmd = "ffmpeg -r 30 -i " + cls.stillsNameFormat + " -vcodec libx264 -preset veryslow -crf 18 " + cls.timelapseFile
+            os.system(ffmpegCmd)
         cls.recordingStep = 'Cleaning Up'
         cls.socketio.emit('statusUpdate', cls.getStatus())
         cls.__cleanupDir()
+        if cls.stopAndDiscard:
+            os.rmdir(cls.timelapseDir)
         cls.state = 'Idle'
         cls.socketio.emit('statusUpdate', {'state': cls.state})
         cls.thread = None
