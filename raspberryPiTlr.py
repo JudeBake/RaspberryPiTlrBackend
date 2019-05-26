@@ -41,7 +41,7 @@ socketio = SocketIO(app)
 
 # Timelapse objects
 timelapseRecorder = TimelapseRecorder(camera, app.logger, socketio)
-timelapseManager = TimelapseManager(app.logger)
+timelapseManager = TimelapseManager(app.logger, timelapseRecorder)
 
 #
 #  Static route for test and video feed
