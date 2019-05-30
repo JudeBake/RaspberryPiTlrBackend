@@ -12,26 +12,23 @@ from pymediainfo import MediaInfo
 import json
 
 class TimelapseManager(object):
-    def __init__(self, logger, timelapseRecorder):
+    def __init__(self, logger):
         """ Time-lapse manager constructor """
         self.workingDir = '/home/pi/timelapse'
         self.logger = logger
-        self.timelapseRecorder = timelapseRecorder
 
     def getTimelaspeList(self):
         """ Getting time-lapse list """
         timelapseList = []
-        recordingTimelapse = ''
-        recorderStatus = self.timelapseRecorder.getStatus()
-        if recorderStatus['state'] == 'Recording':
-            recordingTimelapse = recorderStatus['timelapseInfo']['name']
         for d in os.listdir(self.workingDir):
-            if d != recordingTimelapse:
-                timelapseFile = os.path.join(self.workingDir, d, d + '.mp4')
+            timelapseFile = os.path.join(self.workingDir, d, d + '.mp4')
+            try:
                 timelapseStat = os.stat(timelapseFile)
                 creation = datetime.fromtimestamp(timelapseStat[8]).strftime('%Y-%m-%d %H:%M')
                 duration = self.__getTimelapseDuration(timelapseFile)
                 timelapseList.append({'name': d, 'creation': creation, 'duration': duration})
+            except:
+                self.logger.error('Time-lapse directory exist, But video file does not!')
         return {'timelapses': timelapseList}
 
     def deleteTimelapse(self, timelapseInfo):
