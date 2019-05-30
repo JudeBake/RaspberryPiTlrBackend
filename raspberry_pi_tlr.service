@@ -1,0 +1,13 @@
+[Unit]
+Description=Raspberry Pi Time-Lapse Recorder Backend
+After=syslog.target network.target
+
+[Service]
+Type=simple
+User=pi
+WorkingDirectory=/home/pi/RaspberryPiTlrBackend
+ExecStart=/home/pi/RaspberryPiTlrBackend/venv/bin/python raspberryPiTlr.py
+Restart=on-abort
+
+[Install]
+WantedBy=multi-user.target
